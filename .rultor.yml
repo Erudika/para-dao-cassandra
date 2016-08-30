@@ -1,0 +1,17 @@
+docker:
+  image: "maven:3-jdk-8"
+decrypt:
+  settings.xml: "repo/settings.xml.asc"
+  pubring.gpg: "repo/pubring.gpg.asc"
+  secring.gpg: "repo/secring.gpg.asc"
+merge:
+  commanders:
+    - albogdano
+  script: mvn clean install
+release:
+  commanders:
+    - albogdano
+  script: |
+    mvn versions:set "-DnewVersion=${tag}"
+    git commit -am "${tag}"
+    mvn clean deploy -Ppara-dao-cassandra --settings /home/r/settings.xml
