@@ -61,7 +61,7 @@ public abstract class DAOTest {
 		u.setEmail("asd@asd.com");
 		u.setIdentifier(u.getEmail());
 		u.setPassword("123456");
-		
+
 		t = new Tag(Utils.getNewId());
 		t.setCount(3);
 
@@ -137,7 +137,7 @@ public abstract class DAOTest {
 
 		// test updating locked fields
 		App app = new App(Utils.getNewId());
-		assertNotNull(dao.create(app));
+		assertNotNull(app.create());
 		String secret = app.getSecret();
 		assertNotNull(secret);
 		app.resetSecret();

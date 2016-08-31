@@ -37,6 +37,7 @@ import com.erudika.para.annotations.Locked;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import static com.erudika.para.persistence.CassandraUtils.getClient;
+import static com.erudika.para.persistence.CassandraUtils.getPreparedStatement;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -53,7 +54,7 @@ import java.util.LinkedList;
 public class CassandraDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraDAO.class);
-//	private static final String _ID = "_id";
+	private static final Map<String, PreparedStatement> statements = new HashMap<String, PreparedStatement>();
 
 	public CassandraDAO() { }
 
@@ -119,8 +120,8 @@ public class CassandraDAO implements DAO {
 		try {
 			// if there isn't a document with the same id then create a new document
 			// else replace the document with the same id with the new one
-			PreparedStatement ps = getClient().prepare("INSERT INTO " + CassandraUtils.getTableNameForAppid(appid) +
-					" (id, json) VALUES (?, ?);");
+			PreparedStatement ps = getPreparedStatement("INSERT INTO " +
+					CassandraUtils.getTableNameForAppid(appid) +" (id, json) VALUES (?, ?);");
 			getClient().execute(ps.bind(key, row));
 			logger.debug("Created id: " + key + " row: " + row);
 		} catch (Exception e) {
@@ -134,15 +135,15 @@ public class CassandraDAO implements DAO {
 			return;
 		}
 		try {
-//			toRow(so, Locked.class);
 			String oldRow = readRow(so.getId(), appid);
 			if (oldRow != null) {
 				Map<String, Object> oldData = ParaObjectUtils.getJsonReader(Map.class).readValue(oldRow);
 				Map<String, Object> newData = ParaObjectUtils.getAnnotatedFields(so, Locked.class);
 				oldData.putAll(newData);
-				PreparedStatement ps = getClient().prepare("UPDATE " + CassandraUtils.getTableNameForAppid(appid)
-						+ " SET json = ? WHERE id = ?;");
-				getClient().execute(ps.bind(ParaObjectUtils.getJsonWriter().writeValueAsString(oldData), so.getId()));
+				PreparedStatement ps = getPreparedStatement("UPDATE " +
+						CassandraUtils.getTableNameForAppid(appid) + " SET json = ? WHERE id = ?;");
+				getClient().execute(ps.bind(ParaObjectUtils.getJsonWriterNoIdent().
+						writeValueAsString(oldData), so.getId()));
 				logger.debug("Updated id: " + so.getId());
 			}
 		} catch (Exception e) {
@@ -156,8 +157,8 @@ public class CassandraDAO implements DAO {
 		}
 		String row = null;
 		try {
-			PreparedStatement ps = getClient().prepare("SELECT json FROM " + CassandraUtils.getTableNameForAppid(appid)
-					+ " WHERE id = ?;");
+			PreparedStatement ps = getPreparedStatement("SELECT json FROM " +
+					CassandraUtils.getTableNameForAppid(appid) + " WHERE id = ?;");
 			Row r = getClient().execute(ps.bind(key)).one();
 			if (r != null) {
 				row = r.getString("json");
@@ -174,8 +175,8 @@ public class CassandraDAO implements DAO {
 			return;
 		}
 		try {
-			PreparedStatement ps = getClient().prepare("DELETE FROM " + CassandraUtils.getTableNameForAppid(appid)
-					+ " WHERE id = ?;");
+			PreparedStatement ps = getPreparedStatement("DELETE FROM " +
+					CassandraUtils.getTableNameForAppid(appid) + " WHERE id = ?;");
 			getClient().execute(ps.bind(key));
 			logger.debug("Deleted id: " + key);
 		} catch (Exception e) {
@@ -225,7 +226,7 @@ public class CassandraDAO implements DAO {
 			return new LinkedHashMap<String, P>();
 		}
 		Map<String, P> results = new LinkedHashMap<String, P>(keys.size(), 0.75f, true);
-		PreparedStatement ps = getClient().prepare("SELECT id, json FROM " +
+		PreparedStatement ps = getPreparedStatement("SELECT id, json FROM " +
 				CassandraUtils.getTableNameForAppid(appid) + " WHERE id = ?;");
 
 		List<ResultSetFuture> futures = new ArrayList<ResultSetFuture>(keys.size());
@@ -260,7 +261,11 @@ public class CassandraDAO implements DAO {
 			st.setFetchSize(pager.getLimit());
 			String lastPage = pager.getLastKey();
 			if (lastPage != null) {
-				st.setPagingState(PagingState.fromString(lastPage));
+				if ("end".equals(lastPage)) {
+					return results;
+				} else {
+					st.setPagingState(PagingState.fromString(lastPage));
+				}
 			}
 			ResultSet rs = getClient().execute(st);
 			PagingState nextPage = rs.getExecutionInfo().getPagingState();
@@ -278,6 +283,8 @@ public class CassandraDAO implements DAO {
 
 			if (nextPage != null) {
 				pager.setLastKey(nextPage.toString());
+			} else {
+				pager.setLastKey("end");
 			}
 
 			if (!results.isEmpty()) {
@@ -296,19 +303,35 @@ public class CassandraDAO implements DAO {
 			return;
 		}
 		try {
-			ArrayList<String> values = new ArrayList<String>(objects.size());
-			StringBuilder batch = new StringBuilder("BEGIN BATCH ");
-			for (ParaObject so : objects) {
-				if (so != null) {
-					so.setUpdated(Utils.timestamp());
-					so.setAppid(appid);
-					batch.append("UPDATE ").append(CassandraUtils.getTableNameForAppid(appid)).
-							append(" SET json = ? WHERE id = ?;");
-					values.add(toRow(so, Locked.class));
-					values.add(so.getId());
+			ArrayList<String> keys = new ArrayList<String>(objects.size());
+			for (P obj : objects) {
+				if (obj != null) {
+					keys.add(obj.getId());
 				}
 			}
+			// we read all existing rows first then merge the new data with existing data
+			Map<String, P> existing = readAll(appid, keys, true);
+			ArrayList<String> values = new ArrayList<String>(objects.size());
+			StringBuilder batch = new StringBuilder("BEGIN BATCH ");
+			for (P newObj : objects) {
+				if (newObj != null) {
+					P oldObj = existing.get(newObj.getId());
+					if (oldObj != null) {
+						Map<String, Object> oldData = ParaObjectUtils.getAnnotatedFields(oldObj, null);
+						Map<String, Object> newData = ParaObjectUtils.getAnnotatedFields(newObj, Locked.class);
+						oldData.putAll(newData);
 
+						long now = Utils.timestamp();
+						newObj.setUpdated(now);
+						oldData.put(Config._UPDATED, now);
+						oldData.put(Config._APPID, appid);
+						batch.append("UPDATE ").append(CassandraUtils.getTableNameForAppid(appid)).
+								append(" SET json = ? WHERE id = ?;");
+						values.add(ParaObjectUtils.getJsonWriterNoIdent().writeValueAsString(oldData));
+						values.add(newObj.getId());
+					}
+				}
+			}
 			if (!values.isEmpty()) {
 				batch.append("APPLY BATCH");
 				PreparedStatement ps = getClient().prepare(batch.toString());

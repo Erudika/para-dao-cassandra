@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  *
- * @author Luca Venturella [lucaventurella@gmail.com]
+ * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class CassandraDAOIT extends DAOTest {
 

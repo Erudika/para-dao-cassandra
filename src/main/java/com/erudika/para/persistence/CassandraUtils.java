@@ -18,25 +18,28 @@
 package com.erudika.para.persistence;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.TableMetadata;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.erudika.para.utils.Config;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 import javax.inject.Singleton;
 
 /**
  * Apache Cassandra DAO utilities for Para.
- * @author Luca Venturella [lucaventurella@gmail.com]
+ * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Singleton
 public final class CassandraUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraUtils.class);
-//	private static CassandraClient cassandraClient;
 	private static Session cassandra;
 	private static Cluster cluster;
 	private static final String DBHOSTS = Config.getConfigParam("cassandra.hosts", "localhost");
@@ -45,11 +48,7 @@ public final class CassandraUtils {
 	private static final String DBUSER = Config.getConfigParam("cassandra.user", "");
 	private static final String DBPASS = Config.getConfigParam("cassandra.password", "");
 	private static final int REPLICATION = Config.getConfigInt("cassandra.replication_factor", 1);
-
-	//////////  DB CONFIG  //////////////
-	public static final String CLUSTER = Config.CLUSTER_NAME;
-	public static final int CASSANDRA_PORT = 9160;
-	////////////////////////////////////
+	private static final Map<String, PreparedStatement> statements = new ConcurrentHashMap<String, PreparedStatement>();
 
 	private CassandraUtils() { }
 
@@ -68,23 +67,10 @@ public final class CassandraUtils {
 			if (!existsTable(Config.APP_NAME_NS)) {
 				createTable(Config.APP_NAME_NS);
 			}
-//			ResultSet rs = session.execute("select release_version from system.local");
-//			Row row = rs.one();
 			logger.debug("Cassandra host: " + DBHOSTS + ":" + DBPORT + ", keyspace: " + DBNAME);
 		} catch (Exception e) {
 			logger.error("Failed to connect ot Cassandra: {}.", e.getMessage());
 		}
-//
-//		ServerAddress s = new ServerAddress(DBHOST, DBPORT);
-//		if (!StringUtils.isBlank(DBUSER) && !StringUtils.isBlank(DBPASS)) {
-//			CassandraCredential credential = CassandraCredential.createCredential(DBUSER, DBNAME, DBPASS.toCharArray());
-//			cassandraClient = new CassandraClient(s, Arrays.asList(credential));
-//		} else {
-//			cassandraClient = new CassandraClient(s);
-//		}
-//
-//		cassandra = cassandraClient.getDatabase(DBNAME);
-//
 
 		// We don't have access to Para.addDestroyListener() here.
 		// Users will be responsible for calling shutDownClient().
@@ -116,10 +102,10 @@ public final class CassandraUtils {
 			return false;
 		}
 		try {
-			appid = getTableNameForAppid(appid);
-			ResultSet res = getClient().execute("SELECT id FROM " + DBNAME + " LIMIT 0;");
-			res.one();
-		    return true;
+			getClient(); // just in case cluster var is null
+			KeyspaceMetadata ks = cluster.getMetadata().getKeyspace(DBNAME);
+			TableMetadata table = ks.getTable(getTableNameForAppid(appid));
+			return table != null && table.getName() != null;
 		} catch (Exception e) {
 			return false;
 		}
@@ -165,51 +151,6 @@ public final class CassandraUtils {
 		return false;
 	}
 
-//	/**
-//	 * Gives count information about a Cassandra table.
-//	 * @param appid name of the collection
-//	 * @return a long
-//	 */
-//	public static long getTableCount(final String appid) {
-//		if (StringUtils.isBlank(appid)) {
-//			return -1;
-//		}
-//		try {
-//			Row row = getClient().execute("SELECT __count FROM " + getTableNameForAppid(appid) + ";").
-//					one();
-//			if (row != null) {
-//				Map<String, Object> val = ParaObjectUtils.getJsonReader(Map.class).readValue(row.getString("json"));
-//				return val.get("value") == null ? 0L : (Long) val.get("value");
-//			}
-//		} catch (Exception e) {
-//			logger.error(null, e);
-//		}
-//		return -1;
-//	}
-//
-//	/**
-//	 * Get the cassandra table requested
-//	 * @param appid name of the collection
-//	 * @return a Cassandra collection
-//	 */
-//	public static CassandraCollection<Document> getTable(String appid) {
-//		try {
-//			return getClient().getCollection();
-//		} catch (Exception e) {
-//			logger.error(null, e);
-//		}
-//		return null;
-//	}
-
-//	/**
-//	 * Lists all table names for this account.
-//	 * @return a list of Cassandra tables
-//	 */
-//	public static CassandraIterable<String> listAllTables() {
-//		CassandraIterable<String> collectionNames = getClient().listCollectionNames();
-//		return collectionNames;
-//	}
-
 	/**
 	 * Returns the table name for a given app id. Table names are usually in the form 'prefix_appid'.
 	 * @param appIdentifier app id
@@ -224,11 +165,18 @@ public final class CassandraUtils {
 		}
 	}
 
-//	/**
-//	 * Create a new unique objectid for Cassandra
-//	 * @return the objectid as string
-//	 */
-//	public static String generateNewId(){
-//		return new ObjectId().toHexString();
-//	}
+	/**
+	 * Caches the prepared statements on the query (key).
+	 * @param query a CQL query
+	 * @return a prepared statement
+	 */
+	protected synchronized static PreparedStatement getPreparedStatement(String query){
+		if (statements.containsKey(query)) {
+			return statements.get(query);
+		} else {
+			PreparedStatement ps = getClient().prepare(query);
+			statements.put(query, ps);
+			return ps;
+		}
+	}
 }
