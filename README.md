@@ -25,7 +25,7 @@ The plugin is on Maven Central. Here's the Maven snippet to include in your `pom
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-dao-cassandra</artifactId>
-  <version>1.20.0</version>
+  <version>1.20.1</version>
 </dependency>
 ```
 
