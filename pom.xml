@@ -10,7 +10,7 @@
 
 	<groupId>com.erudika</groupId>
 	<artifactId>para-dao-cassandra</artifactId>
-	<version>1.20.2-SNAPSHOT</version>
+	<version>1.20.1</version>
 
 	<packaging>jar</packaging>
 	<name>Para Cassandra DAO</name>
