@@ -36,7 +36,7 @@ public class CassandraDAOIT extends DAOTest {
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException, TTransportException, IOException {
 		System.setProperty("para.cassandra.port", "9142");
-		EmbeddedCassandraServerHelper.startEmbeddedCassandra();
+		EmbeddedCassandraServerHelper.startEmbeddedCassandra(15 * 1000);
 		dao = new CassandraDAO();
 		CassandraUtils.createTable(Config.APP_NAME_NS);
 		CassandraUtils.createTable(appid1);
