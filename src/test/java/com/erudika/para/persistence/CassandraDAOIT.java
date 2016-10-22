@@ -17,7 +17,6 @@
  */
 package com.erudika.para.persistence;
 
-import com.erudika.para.utils.Config;
 import java.io.IOException;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
@@ -33,12 +32,19 @@ import static org.junit.Assert.assertTrue;
  */
 public class CassandraDAOIT extends DAOTest {
 
+	private static final String ROOT_APP_NAME = "para-test";
+
+	public CassandraDAOIT() {
+		super(new CassandraDAO());
+	}
+
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException, TTransportException, IOException {
 		System.setProperty("para.cassandra.port", "9142");
+		System.setProperty("para.app_name", ROOT_APP_NAME);
+		System.setProperty("para.cluster_name", ROOT_APP_NAME);
 		EmbeddedCassandraServerHelper.startEmbeddedCassandra(15 * 1000);
-		dao = new CassandraDAO();
-		CassandraUtils.createTable(Config.APP_NAME_NS);
+		CassandraUtils.createTable(ROOT_APP_NAME);
 		CassandraUtils.createTable(appid1);
 		CassandraUtils.createTable(appid2);
 		CassandraUtils.createTable(appid3);
@@ -46,7 +52,7 @@ public class CassandraDAOIT extends DAOTest {
 
 	@AfterClass
 	public static void tearDownClass() {
-		CassandraUtils.deleteTable(Config.APP_NAME_NS);
+		CassandraUtils.deleteTable(ROOT_APP_NAME);
 		CassandraUtils.deleteTable(appid1);
 		CassandraUtils.deleteTable(appid2);
 		CassandraUtils.deleteTable(appid3);
