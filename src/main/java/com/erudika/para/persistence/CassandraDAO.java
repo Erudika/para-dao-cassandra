@@ -317,7 +317,8 @@ public class CassandraDAO implements DAO {
 				if (newObj != null) {
 					P oldObj = existing.get(newObj.getId());
 					if (oldObj != null) {
-						Map<String, Object> oldData = ParaObjectUtils.getAnnotatedFields(oldObj, null);
+						Map<String, Object> oldData =
+								new HashMap<String, Object>(ParaObjectUtils.getAnnotatedFields(oldObj, null));
 						Map<String, Object> newData = ParaObjectUtils.getAnnotatedFields(newObj, Locked.class);
 						oldData.putAll(newData);
 
