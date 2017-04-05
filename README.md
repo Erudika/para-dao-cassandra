@@ -25,8 +25,21 @@ The plugin is on Maven Central. Here's the Maven snippet to include in your `pom
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-dao-cassandra</artifactId>
-  <version>1.20.1</version>
+  <version>1.24.0</version>
 </dependency>
+```
+
+### Configuration
+
+Here are all the configuration properties for this plugin (these go inside your `application.conf`):
+```
+para.cassandra.hosts = "localhost,remotehost"
+para.cassandra.port = 9042
+para.cassandra.keyspace = "myapp"
+para.cassandra.user = "user"
+para.cassandra.password = "pass"
+para.cassandra.replication_factor = 1
+para.cassandra.ssl_enabled = false
 ```
 
 Add the project as dependency through Maven and set the config property

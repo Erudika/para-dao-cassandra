@@ -18,6 +18,7 @@
 package com.erudika.para.persistence;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Cluster.Builder;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
@@ -48,6 +49,7 @@ public final class CassandraUtils {
 	private static final String DBUSER = Config.getConfigParam("cassandra.user", "");
 	private static final String DBPASS = Config.getConfigParam("cassandra.password", "");
 	private static final int REPLICATION = Config.getConfigInt("cassandra.replication_factor", 1);
+	private static final boolean SSL = Config.getConfigBoolean("cassandra.ssl_enabled", false);
 	private static final Map<String, PreparedStatement> statements = new ConcurrentHashMap<String, PreparedStatement>();
 
 	private CassandraUtils() { }
@@ -61,8 +63,12 @@ public final class CassandraUtils {
 			return cassandra;
 		}
 		try {
-			cluster = Cluster.builder().addContactPoints(DBHOSTS.split(",")).
-					withPort(DBPORT).withCredentials(DBUSER, DBPASS).build();
+			Builder builder = Cluster.builder().addContactPoints(DBHOSTS.split(",")).
+					withPort(DBPORT).withCredentials(DBUSER, DBPASS);
+			if (SSL) {
+				builder.withSSL();
+			}
+			cluster = builder.build();
 			cassandra = cluster.connect();
 			if (!existsTable(Config.APP_NAME_NS)) {
 				createTable(Config.APP_NAME_NS);
