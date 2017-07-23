@@ -51,12 +51,12 @@ public final class CassandraUtils {
 	private static final String DBPASS = Config.getConfigParam("cassandra.password", "");
 	private static final int REPLICATION = Config.getConfigInt("cassandra.replication_factor", 1);
 	private static final boolean SSL = Config.getConfigBoolean("cassandra.ssl_enabled", false);
-	private static final Map<String, PreparedStatement> statements = new ConcurrentHashMap<String, PreparedStatement>();
+	private static final Map<String, PreparedStatement> STATEMENTS = new ConcurrentHashMap<String, PreparedStatement>();
 
 	private CassandraUtils() { }
 
 	/**
-	 * Returns a Cassandra session object
+	 * Returns a Cassandra session object.
 	 * @return a connection session to Cassandra
 	 */
 	public static Session getClient() {
@@ -132,7 +132,7 @@ public final class CassandraUtils {
 		}
 		try {
 			String table = getTableNameForAppid(appid);
-			getClient().execute("CREATE KEYSPACE IF NOT EXISTS "+ DBNAME +
+			getClient().execute("CREATE KEYSPACE IF NOT EXISTS " + DBNAME +
 					" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': " + REPLICATION + "};");
 			getClient().execute("USE " + DBNAME + ";");
 			getClient().execute("CREATE TABLE IF NOT EXISTS " + table + " (id text PRIMARY KEY, json text);");
@@ -183,12 +183,12 @@ public final class CassandraUtils {
 	 * @param query a CQL query
 	 * @return a prepared statement
 	 */
-	protected synchronized static PreparedStatement getPreparedStatement(String query){
-		if (statements.containsKey(query)) {
-			return statements.get(query);
+	protected static synchronized PreparedStatement getPreparedStatement(String query) {
+		if (STATEMENTS.containsKey(query)) {
+			return STATEMENTS.get(query);
 		} else {
 			PreparedStatement ps = getClient().prepare(query);
-			statements.put(query, ps);
+			STATEMENTS.put(query, ps);
 			return ps;
 		}
 	}

@@ -54,8 +54,11 @@ import java.util.LinkedList;
 public class CassandraDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraDAO.class);
-	private static final Map<String, PreparedStatement> statements = new HashMap<String, PreparedStatement>();
+	private static final Map<String, PreparedStatement> STATEMENTS = new HashMap<String, PreparedStatement>();
 
+	/**
+	 * Default constructor.
+	 */
 	public CassandraDAO() { }
 
 	/////////////////////////////////////////////
@@ -121,7 +124,7 @@ public class CassandraDAO implements DAO {
 			// if there isn't a document with the same id then create a new document
 			// else replace the document with the same id with the new one
 			PreparedStatement ps = getPreparedStatement("INSERT INTO " +
-					CassandraUtils.getTableNameForAppid(appid) +" (id, json) VALUES (?, ?);");
+					CassandraUtils.getTableNameForAppid(appid) + " (id, json) VALUES (?, ?);");
 			getClient().execute(ps.bind(key, row));
 			logger.debug("Created id: " + key + " row: " + row);
 		} catch (Exception e) {
