@@ -23,6 +23,7 @@ import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TableMetadata;
+import com.erudika.para.core.App;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public final class CassandraUtils {
 	private static Cluster cluster;
 	private static final String DBHOSTS = Config.getConfigParam("cassandra.hosts", "localhost");
 	private static final int DBPORT = Config.getConfigInt("cassandra.port", 9042);
-	private static final String DBNAME = getTableNameForAppid(Config.getConfigParam("cassandra.keyspace", Config.APP_NAME_NS));
+	private static final String DBNAME = getTableNameForAppid(Config.getConfigParam("cassandra.keyspace", Config.getRootAppIdentifier()));
 	private static final String DBUSER = Config.getConfigParam("cassandra.user", "");
 	private static final String DBPASS = Config.getConfigParam("cassandra.password", "");
 	private static final int REPLICATION = Config.getConfigInt("cassandra.replication_factor", 1);
@@ -70,16 +71,19 @@ public final class CassandraUtils {
 			}
 			cluster = builder.build();
 			cassandra = cluster.connect();
-			if (!existsTable(Config.APP_NAME_NS)) {
-				createTable(Config.APP_NAME_NS);
+			if (!existsTable(Config.getRootAppIdentifier())) {
+				createTable(Config.getRootAppIdentifier());
 			}
 			logger.debug("Cassandra host: " + DBHOSTS + ":" + DBPORT + ", keyspace: " + DBNAME);
 		} catch (Exception e) {
 			logger.error("Failed to connect ot Cassandra: {}.", e.getMessage());
 		}
 
-		// We don't have access to Para.addDestroyListener() here.
-		// Users will be responsible for calling shutDownClient().
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				shutdownClient();
+			}
+		});
 
 		return cassandra;
 	}
@@ -132,6 +136,7 @@ public final class CassandraUtils {
 					" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': " + REPLICATION + "};");
 			getClient().execute("USE " + DBNAME + ";");
 			getClient().execute("CREATE TABLE IF NOT EXISTS " + table + " (id text PRIMARY KEY, json text);");
+			logger.info("Created Cassandra table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -149,7 +154,9 @@ public final class CassandraUtils {
 			return false;
 		}
 		try {
-			getClient().execute("DROP TABLE IF EXISTS " + getTableNameForAppid(appid) + ";");
+			String table = getTableNameForAppid(appid);
+			getClient().execute("DROP TABLE IF EXISTS " + table + ";");
+			logger.info("Deleted Cassandra table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -166,7 +173,7 @@ public final class CassandraUtils {
 		if (StringUtils.isBlank(appIdentifier)) {
 			return null;
 		} else {
-			return ((appIdentifier.equals(Config.APP_NAME_NS) || appIdentifier.startsWith(Config.PARA.concat("-"))) ?
+			return (App.isRoot(appIdentifier) || appIdentifier.startsWith(Config.PARA.concat("-")) ?
 					appIdentifier : Config.PARA + "-" + appIdentifier).replaceAll("-", "_");
 		}
 	}
