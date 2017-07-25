@@ -24,6 +24,8 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
+import com.erudika.para.AppCreatedListener;
+import com.erudika.para.AppDeletedListener;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -34,6 +36,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.erudika.para.annotations.Locked;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import static com.erudika.para.persistence.CassandraUtils.getClient;
@@ -54,12 +57,27 @@ import java.util.LinkedList;
 public class CassandraDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraDAO.class);
-	private static final Map<String, PreparedStatement> STATEMENTS = new HashMap<String, PreparedStatement>();
 
 	/**
 	 * Default constructor.
 	 */
-	public CassandraDAO() { }
+	public CassandraDAO() {
+		// set up automatic table creation and deletion
+		App.addAppCreatedListener(new AppCreatedListener() {
+			public void onAppCreated(App app) {
+				if (app != null && !app.isSharingTable()) {
+					CassandraUtils.createTable(app.getAppIdentifier());
+				}
+			}
+		});
+		App.addAppDeletedListener(new AppDeletedListener() {
+			public void onAppDeleted(App app) {
+				if (app != null && !app.isSharingTable()) {
+					CassandraUtils.deleteTable(app.getAppIdentifier());
+				}
+			}
+		});
+	}
 
 	/////////////////////////////////////////////
 	//			CORE FUNCTIONS
