@@ -258,10 +258,12 @@ public class CassandraDAO implements DAO {
 		for (ResultSetFuture future : futures) {
 			ResultSet rows = future.getUninterruptibly();
 			Row row = rows.one();
-			String json = row.getString("json");
-			if (!StringUtils.isBlank(json)) {
-				P obj = fromRow(json);
-				results.put(row.getString("id"), obj);
+			if (row != null) {
+				String json = row.getString("json");
+				if (!StringUtils.isBlank(json)) {
+					P obj = fromRow(json);
+					results.put(row.getString("id"), obj);
+				}
 			}
 		}
 		logger.debug("DAO.readAll() {}", results.size());
@@ -293,9 +295,11 @@ public class CassandraDAO implements DAO {
 
 			int remaining = rs.getAvailableWithoutFetching();
 			for (Row row : rs) {
-				P obj = fromRow(row.getString("json"));
-				if (obj != null) {
-					results.add(obj);
+				if (row != null) {
+					P obj = fromRow(row.getString("json"));
+					if (obj != null) {
+						results.add(obj);
+					}
 				}
 				if (--remaining == 0) {
 					break;
