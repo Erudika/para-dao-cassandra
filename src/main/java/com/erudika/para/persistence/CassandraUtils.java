@@ -42,11 +42,11 @@ import javax.inject.Singleton;
 public final class CassandraUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraUtils.class);
-	private static Session cassandra;
+	private static Session session;
 	private static Cluster cluster;
 	private static final String DBHOSTS = Config.getConfigParam("cassandra.hosts", "localhost");
 	private static final int DBPORT = Config.getConfigInt("cassandra.port", 9042);
-	private static final String DBNAME = getTableNameForAppid(Config.getConfigParam("cassandra.keyspace", Config.getRootAppIdentifier()));
+	private static final String DBNAME = getTableNameForAppid(Config.getConfigParam("cassandra.keyspace", Config.PARA));
 	private static final String DBUSER = Config.getConfigParam("cassandra.user", "");
 	private static final String DBPASS = Config.getConfigParam("cassandra.password", "");
 	private static final int REPLICATION = Config.getConfigInt("cassandra.replication_factor", 1);
@@ -60,8 +60,8 @@ public final class CassandraUtils {
 	 * @return a connection session to Cassandra
 	 */
 	public static Session getClient() {
-		if (cassandra != null) {
-			return cassandra;
+		if (session != null) {
+			return session;
 		}
 		try {
 			Builder builder = Cluster.builder().addContactPoints(DBHOSTS.split(",")).
@@ -70,9 +70,11 @@ public final class CassandraUtils {
 				builder.withSSL();
 			}
 			cluster = builder.build();
-			cassandra = cluster.connect();
+			session = cluster.connect();
 			if (!existsTable(Config.getRootAppIdentifier())) {
-				createTable(Config.getRootAppIdentifier());
+				createTable(session, Config.getRootAppIdentifier());
+			} else {
+				session.execute("USE " + DBNAME + ";");
 			}
 			logger.debug("Cassandra host: " + DBHOSTS + ":" + DBPORT + ", keyspace: " + DBNAME);
 		} catch (Exception e) {
@@ -85,7 +87,7 @@ public final class CassandraUtils {
 			}
 		});
 
-		return cassandra;
+		return session;
 	}
 
 	/**
@@ -93,9 +95,9 @@ public final class CassandraUtils {
 	 * You can tell Para to call this on shutdown using {@code Para.addDestroyListener()}
 	 */
 	public static void shutdownClient() {
-		if (cassandra != null) {
-			cassandra.close();
-			cassandra = null;
+		if (session != null) {
+			session.close();
+			session = null;
 		}
 		if (cluster != null) {
 			cluster.close();
@@ -111,8 +113,10 @@ public final class CassandraUtils {
 		if (StringUtils.isBlank(appid)) {
 			return false;
 		}
+		if (cluster == null) {
+			throw new IllegalStateException("Cassandra client not initialized.");
+		}
 		try {
-			getClient(); // just in case cluster var is null
 			KeyspaceMetadata ks = cluster.getMetadata().getKeyspace(DBNAME);
 			TableMetadata table = ks.getTable(getTableNameForAppid(appid));
 			return table != null && table.getName() != null;
@@ -127,15 +131,20 @@ public final class CassandraUtils {
 	 * @return true if created
 	 */
 	public static boolean createTable(String appid) {
-		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || existsTable(appid)) {
+		return createTable(getClient(), appid);
+	}
+
+	static boolean createTable(Session client, String appid) {
+		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) ||
+				existsTable(appid) || client == null) {
 			return false;
 		}
 		try {
 			String table = getTableNameForAppid(appid);
-			getClient().execute("CREATE KEYSPACE IF NOT EXISTS " + DBNAME +
+			client.execute("CREATE KEYSPACE IF NOT EXISTS " + DBNAME +
 					" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': " + REPLICATION + "};");
-			getClient().execute("USE " + DBNAME + ";");
-			getClient().execute("CREATE TABLE IF NOT EXISTS " + table + " (id text PRIMARY KEY, json text);");
+			client.execute("USE " + DBNAME + ";");
+			client.execute("CREATE TABLE IF NOT EXISTS " + table + " (id text PRIMARY KEY, json text);");
 			logger.info("Created Cassandra table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);
