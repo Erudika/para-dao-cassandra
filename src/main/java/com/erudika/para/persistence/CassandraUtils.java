@@ -144,7 +144,7 @@ public final class CassandraUtils {
 			client.execute("CREATE KEYSPACE IF NOT EXISTS " + DBNAME +
 					" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': " + REPLICATION + "};");
 			client.execute("USE " + DBNAME + ";");
-			client.execute("CREATE TABLE IF NOT EXISTS " + table + " (id text PRIMARY KEY, json text);");
+			client.execute("CREATE TABLE IF NOT EXISTS " + table + " (id text PRIMARY KEY, json text, json_updates text);");
 			logger.info("Created Cassandra table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);

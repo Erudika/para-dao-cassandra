@@ -44,6 +44,8 @@ public class CassandraDAOIT extends DAOTest {
 		System.setProperty("para.app_name", ROOT_APP_NAME);
 		System.setProperty("para.cluster_name", ROOT_APP_NAME);
 		EmbeddedCassandraServerHelper.startEmbeddedCassandra(15 * 1000);
+		EmbeddedCassandraServerHelper.getCluster();
+		EmbeddedCassandraServerHelper.getSession();
 		CassandraUtils.createTable(ROOT_APP_NAME);
 		CassandraUtils.createTable(appid1);
 		CassandraUtils.createTable(appid2);

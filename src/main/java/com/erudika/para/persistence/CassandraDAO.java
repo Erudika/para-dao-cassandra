@@ -108,7 +108,7 @@ public class CassandraDAO implements DAO {
 		if (StringUtils.isBlank(key)) {
 			return null;
 		}
-		P so = fromRow(readRow(key, appid));
+		P so = readRow(key, appid);
 		logger.debug("DAO.read() {} -> {}", key, so == null ? null : so.getType());
 		return so != null ? so : null;
 	}
@@ -142,7 +142,7 @@ public class CassandraDAO implements DAO {
 			// if there isn't a document with the same id then create a new document
 			// else replace the document with the same id with the new one
 			PreparedStatement ps = getPreparedStatement("INSERT INTO " +
-					CassandraUtils.getTableNameForAppid(appid) + " (id, json) VALUES (?, ?);");
+					CassandraUtils.getTableNameForAppid(appid) + " (id, json, json_updates) VALUES (?, ?, NULL);");
 			getClient().execute(ps.bind(key, row));
 			logger.debug("Created id: " + key + " row: " + row);
 		} catch (Exception e) {
@@ -156,39 +156,32 @@ public class CassandraDAO implements DAO {
 			return;
 		}
 		try {
-			String oldRow = readRow(so.getId(), appid);
-			if (oldRow != null) {
-				Map<String, Object> oldData = ParaObjectUtils.getJsonReader(Map.class).readValue(oldRow);
-				Map<String, Object> newData = ParaObjectUtils.getAnnotatedFields(so, Locked.class);
-				oldData.putAll(newData);
-				PreparedStatement ps = getPreparedStatement("UPDATE " +
-						CassandraUtils.getTableNameForAppid(appid) + " SET json = ? WHERE id = ?;");
-				getClient().execute(ps.bind(ParaObjectUtils.getJsonWriterNoIdent().
-						writeValueAsString(oldData), so.getId()));
-				logger.debug("Updated id: " + so.getId());
-			}
+			Map<String, Object> data = ParaObjectUtils.getAnnotatedFields(so, Locked.class);
+			PreparedStatement ps = getPreparedStatement("UPDATE " +
+					CassandraUtils.getTableNameForAppid(appid) + " SET json_updates = ? WHERE id = ?;");
+			getClient().execute(ps.bind(ParaObjectUtils.getJsonWriterNoIdent().writeValueAsString(data), so.getId()));
+			logger.debug("Updated id: " + so.getId());
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
 	}
 
-	private String readRow(String key, String appid) {
+	private <P extends ParaObject> P readRow(String key, String appid) {
 		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid)) {
 			return null;
 		}
-		String row = null;
 		try {
-			PreparedStatement ps = getPreparedStatement("SELECT json FROM " +
+			PreparedStatement ps = getPreparedStatement("SELECT json, json_updates FROM " +
 					CassandraUtils.getTableNameForAppid(appid) + " WHERE id = ?;");
 			Row r = getClient().execute(ps.bind(key)).one();
 			if (r != null) {
-				row = r.getString("json");
+				logger.debug("Read id: " + key + " row: " + r);
+				return fromRow(r.getString("json"), r.getString("json_updates"));
 			}
-			logger.debug("Read id: " + key + " row: " + row);
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
-		return (row == null || row.isEmpty()) ? null : row;
+		return null;
 	}
 
 	private void deleteRow(String key, String appid) {
@@ -247,7 +240,7 @@ public class CassandraDAO implements DAO {
 			return new LinkedHashMap<String, P>();
 		}
 		Map<String, P> results = new LinkedHashMap<String, P>(keys.size(), 0.75f, true);
-		PreparedStatement ps = getPreparedStatement("SELECT id, json FROM " +
+		PreparedStatement ps = getPreparedStatement("SELECT id, json, json_updates FROM " +
 				CassandraUtils.getTableNameForAppid(appid) + " WHERE id = ?;");
 
 		List<ResultSetFuture> futures = new ArrayList<ResultSetFuture>(keys.size());
@@ -260,8 +253,9 @@ public class CassandraDAO implements DAO {
 			Row row = rows.one();
 			if (row != null) {
 				String json = row.getString("json");
+				String jsonUpdates = row.getString("json_updates");
 				if (!StringUtils.isBlank(json)) {
-					P obj = fromRow(json);
+					P obj = fromRow(json, jsonUpdates);
 					results.put(row.getString("id"), obj);
 				}
 			}
@@ -280,7 +274,8 @@ public class CassandraDAO implements DAO {
 			pager = new Pager();
 		}
 		try {
-			Statement st = new SimpleStatement("SELECT json FROM " + CassandraUtils.getTableNameForAppid(appid) + ";");
+			Statement st = new SimpleStatement("SELECT json, json_updates FROM " +
+					CassandraUtils.getTableNameForAppid(appid) + ";");
 			st.setFetchSize(pager.getLimit());
 			String lastPage = pager.getLastKey();
 			if (lastPage != null) {
@@ -296,7 +291,7 @@ public class CassandraDAO implements DAO {
 			int remaining = rs.getAvailableWithoutFetching();
 			for (Row row : rs) {
 				if (row != null) {
-					P obj = fromRow(row.getString("json"));
+					P obj = fromRow(row.getString("json"), row.getString("json_updates"));
 					if (obj != null) {
 						results.add(obj);
 					}
@@ -415,18 +410,24 @@ public class CassandraDAO implements DAO {
 		return row;
 	}
 
-	private <P extends ParaObject> P fromRow(String row) {
-		if (row == null || row.isEmpty()) {
+	private <P extends ParaObject> P fromRow(String json, String jsonUpdates) {
+		if (json == null || json.isEmpty()) {
 			logger.debug("row is null or empty");
 			return null;
 		}
-		Map<String, Object> props = new HashMap<String, Object>();
 		try {
-			props = ParaObjectUtils.getJsonReader(Map.class).readValue(row);
+			P obj = ParaObjectUtils.fromJSON(json);
+			if (obj != null) {
+				if (jsonUpdates != null) {
+					Map<String, Object> data =  ParaObjectUtils.getJsonReader(Map.class).readValue(jsonUpdates);
+					ParaObjectUtils.setAnnotatedFields(obj, data, null);
+				}
+				return obj;
+			}
 		} catch (IOException ex) {
 			logger.error(null, ex);
 		}
-		return ParaObjectUtils.setAnnotatedFields(props);
+		return null;
 	}
 
 	//////////////////////////////////////////////////////
