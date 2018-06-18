@@ -54,6 +54,24 @@ para.dao = "CassandraDAO"
 This could be a Java system property or part of a `application.conf` file on the classpath.
 This tells Para to use the Cassandra Data Access Object (DAO) implementation instead of the default.
 
+### Schema
+
+**BREAKING CHANGE:** The schema has changed in v1.30.0 - column `json_updates` was added. 
+**Execute the following statement before switching to the new version:**
+```sql
+ALTER TABLE {app_identifier} ADD json_updates NVARCHAR;
+```
+This is not required for tables created after v1.30.0.
+
+Here's the schema for each table created by Para:
+```sql
+CREATE TABLE {app_identifier} (
+    id            text PRIMARY KEY,
+    json          text,
+    json_updates  text
+)
+```
+
 ### Requirements
 
 - Cassandra Java Driver by DataStax
