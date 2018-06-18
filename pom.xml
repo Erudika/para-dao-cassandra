@@ -61,7 +61,7 @@
 		<dependency>
 			<groupId>com.erudika</groupId>
 			<artifactId>para-core</artifactId>
-			<version>1.29.0</version>
+			<version>1.29.2</version>
 			<scope>provided</scope>
 		</dependency>
 
@@ -69,14 +69,14 @@
 		<dependency>
 			<groupId>com.datastax.cassandra</groupId>
 			<artifactId>cassandra-driver-core</artifactId>
-			<version>3.4.0</version>
+			<version>3.5.0</version>
 		</dependency>
 
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.cassandraunit</groupId>
 			<artifactId>cassandra-unit</artifactId>
-			<version>3.3.0.2</version>
+			<version>3.5.0.1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -98,7 +98,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.1.0</version>
+				<version>3.1.1</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -203,7 +203,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
-				<version>3.3.0.603</version>
+				<version>3.4.0.905</version>
 			</plugin>
 		</plugins>
 	</build>
