@@ -147,6 +147,7 @@ public class CassandraDAO implements DAO {
 			logger.debug("Created id: " + key + " row: " + row);
 		} catch (Exception e) {
 			logger.error(null, e);
+			throwIfNecessary(e);
 		}
 		return key;
 	}
@@ -163,6 +164,7 @@ public class CassandraDAO implements DAO {
 			logger.debug("Updated id: " + so.getId());
 		} catch (Exception e) {
 			logger.error(null, e);
+			throwIfNecessary(e);
 		}
 	}
 
@@ -195,6 +197,7 @@ public class CassandraDAO implements DAO {
 			logger.debug("Deleted id: " + key);
 		} catch (Exception e) {
 			logger.error(null, e);
+			throwIfNecessary(e);
 		}
 	}
 
@@ -209,27 +212,32 @@ public class CassandraDAO implements DAO {
 		}
 		ArrayList<String> values = new ArrayList<String>(objects.size());
 		StringBuilder batch = new StringBuilder("BEGIN BATCH ");
-		for (ParaObject so : objects) {
-			if (so != null) {
-				if (StringUtils.isBlank(so.getId())) {
-					so.setId(Utils.getNewId());
-					logger.debug("Generated id: " + so.getId());
+		try {
+			for (ParaObject so : objects) {
+				if (so != null) {
+					if (StringUtils.isBlank(so.getId())) {
+						so.setId(Utils.getNewId());
+						logger.debug("Generated id: " + so.getId());
+					}
+					if (so.getTimestamp() == null) {
+						so.setTimestamp(Utils.timestamp());
+					}
+					so.setAppid(appid);
+					batch.append("INSERT INTO ").append(CassandraUtils.getTableNameForAppid(appid)).
+							append(" (id, json) VALUES (?, ?);");
+					values.add(so.getId());
+					values.add(toRow(so, null));
 				}
-				if (so.getTimestamp() == null) {
-					so.setTimestamp(Utils.timestamp());
-				}
-				so.setAppid(appid);
-				batch.append("INSERT INTO ").append(CassandraUtils.getTableNameForAppid(appid)).
-						append(" (id, json) VALUES (?, ?);");
-				values.add(so.getId());
-				values.add(toRow(so, null));
 			}
-		}
 
-		if (!values.isEmpty()) {
-			batch.append("APPLY BATCH");
-			PreparedStatement ps = getClient().prepare(batch.toString());
-			getClient().execute(ps.bind(values.toArray()));
+			if (!values.isEmpty()) {
+				batch.append("APPLY BATCH");
+				PreparedStatement ps = getClient().prepare(batch.toString());
+				getClient().execute(ps.bind(values.toArray()));
+			}
+		} catch (Exception e) {
+			logger.error(null, e);
+			throwIfNecessary(e);
 		}
 		logger.debug("DAO.createAll() {}", objects.size());
 	}
@@ -360,6 +368,7 @@ public class CassandraDAO implements DAO {
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
+			throwIfNecessary(e);
 		}
 		logger.debug("DAO.updateAll() {}", objects.size());
 	}
@@ -388,6 +397,7 @@ public class CassandraDAO implements DAO {
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
+			throwIfNecessary(e);
 		}
 		logger.debug("DAO.deleteAll() {}", objects.size());
 	}
@@ -428,6 +438,12 @@ public class CassandraDAO implements DAO {
 			logger.error(null, ex);
 		}
 		return null;
+	}
+
+	private static void throwIfNecessary(Throwable t) {
+		if (t != null && Config.getConfigBoolean("fail_on_write_errors", false)) {
+			throw new RuntimeException("DAO write operation failed!", t);
+		}
 	}
 
 	//////////////////////////////////////////////////////
