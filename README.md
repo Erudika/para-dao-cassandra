@@ -45,6 +45,8 @@ para.cassandra.user = "user"
 para.cassandra.password = "pass"
 para.cassandra.replication_factor = 1
 para.cassandra.ssl_enabled = false
+para.cassandra.jmx_enabled = false
+para.cassandra.metrics_enabled = true
 ```
 
 Finally, set the config property:
@@ -56,7 +58,7 @@ This tells Para to use the Cassandra Data Access Object (DAO) implementation ins
 
 ### Schema
 
-**BREAKING CHANGE:** The schema has changed in v1.30.0 - column `json_updates` was added. 
+**BREAKING CHANGE:** The schema has changed in v1.30.0 - column `json_updates` was added.
 **Execute the following statement before switching to the new version:**
 ```sql
 ALTER TABLE {app_identifier} ADD json_updates NVARCHAR;

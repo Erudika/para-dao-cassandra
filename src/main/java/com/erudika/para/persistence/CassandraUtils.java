@@ -51,6 +51,8 @@ public final class CassandraUtils {
 	private static final String DBPASS = Config.getConfigParam("cassandra.password", "");
 	private static final int REPLICATION = Config.getConfigInt("cassandra.replication_factor", 1);
 	private static final boolean SSL = Config.getConfigBoolean("cassandra.ssl_enabled", false);
+	private static final boolean JMX = Config.getConfigBoolean("cassandra.jmx_enabled", false);
+	private static final boolean METRICS = Config.getConfigBoolean("cassandra.metrics_enabled", true);
 	private static final Map<String, PreparedStatement> STATEMENTS = new ConcurrentHashMap<String, PreparedStatement>();
 
 	private CassandraUtils() { }
@@ -68,6 +70,12 @@ public final class CassandraUtils {
 					withPort(DBPORT).withCredentials(DBUSER, DBPASS);
 			if (SSL) {
 				builder.withSSL();
+			}
+			if (!JMX) {
+				builder.withoutJMXReporting();
+			}
+			if (!METRICS) {
+				builder.withoutMetrics();
 			}
 			cluster = builder.build();
 			session = cluster.connect();
