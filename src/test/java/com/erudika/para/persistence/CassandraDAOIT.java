@@ -25,6 +25,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -33,6 +35,7 @@ import static org.junit.Assert.assertTrue;
 public class CassandraDAOIT extends DAOTest {
 
 	private static final String ROOT_APP_NAME = "para-test";
+	private static final Logger logger = LoggerFactory.getLogger(CassandraDAOIT.class.getName());
 
 	public CassandraDAOIT() {
 		super(new CassandraDAO());
@@ -43,7 +46,11 @@ public class CassandraDAOIT extends DAOTest {
 		System.setProperty("para.cassandra.port", "9142");
 		System.setProperty("para.app_name", ROOT_APP_NAME);
 		System.setProperty("para.cluster_name", ROOT_APP_NAME);
-		EmbeddedCassandraServerHelper.startEmbeddedCassandra(15 * 1000);
+		try {
+			EmbeddedCassandraServerHelper.startEmbeddedCassandra(15 * 1000);
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
 		EmbeddedCassandraServerHelper.getCluster();
 		EmbeddedCassandraServerHelper.getSession();
 		CassandraUtils.createTable(ROOT_APP_NAME);
