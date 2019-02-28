@@ -23,6 +23,8 @@ import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TableMetadata;
+import com.erudika.para.DestroyListener;
+import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -89,8 +91,8 @@ public final class CassandraUtils {
 			logger.error("Failed to connect ot Cassandra: {}.", e.getMessage());
 		}
 
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
+		Para.addDestroyListener(new DestroyListener() {
+			public void onDestroy() {
 				shutdownClient();
 			}
 		});
