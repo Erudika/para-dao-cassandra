@@ -48,7 +48,7 @@ public final class CassandraUtils {
 	private static Cluster cluster;
 	private static final String DBHOSTS = Config.getConfigParam("cassandra.hosts", "localhost");
 	private static final int DBPORT = Config.getConfigInt("cassandra.port", 9042);
-	private static final String DBNAME = getTableNameForAppid(Config.getConfigParam("cassandra.keyspace", Config.PARA));
+	private static final String DBNAME = Config.getConfigParam("cassandra.keyspace", Config.PARA);
 	private static final String DBUSER = Config.getConfigParam("cassandra.user", "");
 	private static final String DBPASS = Config.getConfigParam("cassandra.password", "");
 	private static final int REPLICATION = Config.getConfigInt("cassandra.replication_factor", 1);
@@ -149,10 +149,16 @@ public final class CassandraUtils {
 				existsTable(appid) || client == null) {
 			return false;
 		}
+		String table = getTableNameForAppid(appid);
 		try {
-			String table = getTableNameForAppid(appid);
-			client.execute("CREATE KEYSPACE IF NOT EXISTS " + DBNAME +
-					" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': " + REPLICATION + "};");
+			if (cluster.getMetadata().getKeyspace(DBNAME) == null) {
+				client.execute("CREATE KEYSPACE IF NOT EXISTS " + DBNAME +
+						" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': " + REPLICATION + "};");
+			}
+		} catch (Exception e) {
+			logger.warn("Could not create keyspace {}!", DBNAME);
+		}
+		try {
 			client.execute("USE " + DBNAME + ";");
 			client.execute("CREATE TABLE IF NOT EXISTS " + table + " (id text PRIMARY KEY, json text, json_updates text);");
 			logger.info("Created Cassandra table '{}'.", table);
