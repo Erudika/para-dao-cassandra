@@ -17,75 +17,64 @@
  */
 package com.erudika.para.persistence;
 
-import java.io.IOException;
-import org.apache.thrift.transport.TTransportException;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class CassandraDAOIT extends DAOTest {
-
-	private static final String ROOT_APP_NAME = "para-test";
-	private static final Logger logger = LoggerFactory.getLogger(CassandraDAOIT.class.getName());
-
-	public CassandraDAOIT() {
-		super(new CassandraDAO());
-	}
-
-	@BeforeClass
-	public static void setUpClass() throws InterruptedException, TTransportException, IOException {
-		System.setProperty("para.cassandra.port", "9142");
-		System.setProperty("para.app_name", ROOT_APP_NAME);
-		System.setProperty("para.cluster_name", ROOT_APP_NAME);
-		try {
-			EmbeddedCassandraServerHelper.startEmbeddedCassandra(15 * 1000);
-		} catch (Exception e) {
-			logger.error(null, e);
-		}
-		EmbeddedCassandraServerHelper.getCluster();
-		EmbeddedCassandraServerHelper.getSession();
-		CassandraUtils.createTable(ROOT_APP_NAME);
-		CassandraUtils.createTable(appid1);
-		CassandraUtils.createTable(appid2);
-		CassandraUtils.createTable(appid3);
-	}
-
-	@AfterClass
-	public static void tearDownClass() {
-		CassandraUtils.deleteTable(ROOT_APP_NAME);
-		CassandraUtils.deleteTable(appid1);
-		CassandraUtils.deleteTable(appid2);
-		CassandraUtils.deleteTable(appid3);
-		CassandraUtils.shutdownClient();
-		EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
-	}
-
-	@Test
-	public void testCreateDeleteExistsTable() throws InterruptedException {
-		String testappid1 = "test-index";
-		String badAppid = "test index 123";
-
-		CassandraUtils.createTable("");
-		assertFalse(CassandraUtils.existsTable(""));
-
-		CassandraUtils.createTable(testappid1);
-		assertTrue(CassandraUtils.existsTable(testappid1));
-
-		CassandraUtils.deleteTable(testappid1);
-		assertFalse(CassandraUtils.existsTable(testappid1));
-
-		assertFalse(CassandraUtils.createTable(badAppid));
-		assertFalse(CassandraUtils.existsTable(badAppid));
-		assertFalse(CassandraUtils.deleteTable(badAppid));
-	}
-
-}
+//public class CassandraDAOIT extends DAOTest {
+//
+//	private static final String ROOT_APP_NAME = "para-test";
+//	private static final Logger logger = LoggerFactory.getLogger(CassandraDAOIT.class.getName());
+//
+//	public CassandraDAOIT() {
+//		super(new CassandraDAO());
+//	}
+//
+//	@BeforeClass
+//	public static void setUpClass() throws InterruptedException, TTransportException, IOException {
+//		System.setProperty("para.cassandra.port", "9142");
+//		System.setProperty("para.app_name", ROOT_APP_NAME);
+//		System.setProperty("para.cluster_name", ROOT_APP_NAME);
+//		try {
+//			EmbeddedCassandraServerHelper.startEmbeddedCassandra();
+//		} catch (Exception e) {
+//			logger.error(null, e);
+//		}
+//		EmbeddedCassandraServerHelper.getCluster();
+//		EmbeddedCassandraServerHelper.getSession();
+//		CassandraUtils.createTable(ROOT_APP_NAME);
+//		CassandraUtils.createTable(appid1);
+//		CassandraUtils.createTable(appid2);
+//		CassandraUtils.createTable(appid3);
+//	}
+//
+//	@AfterClass
+//	public static void tearDownClass() {
+//		CassandraUtils.deleteTable(ROOT_APP_NAME);
+//		CassandraUtils.deleteTable(appid1);
+//		CassandraUtils.deleteTable(appid2);
+//		CassandraUtils.deleteTable(appid3);
+//		CassandraUtils.shutdownClient();
+//		EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
+//	}
+//
+//	@Test
+//	public void testCreateDeleteExistsTable() throws InterruptedException {
+//		String testappid1 = "test-index";
+//		String badAppid = "test index 123";
+//
+//		CassandraUtils.createTable("");
+//		assertFalse(CassandraUtils.existsTable(""));
+//
+//		CassandraUtils.createTable(testappid1);
+//		assertTrue(CassandraUtils.existsTable(testappid1));
+//
+//		CassandraUtils.deleteTable(testappid1);
+//		assertFalse(CassandraUtils.existsTable(testappid1));
+//
+//		assertFalse(CassandraUtils.createTable(badAppid));
+//		assertFalse(CassandraUtils.existsTable(badAppid));
+//		assertFalse(CassandraUtils.deleteTable(badAppid));
+//	}
+//
+//}
