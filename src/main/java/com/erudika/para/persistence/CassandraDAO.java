@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2020 Erudika. https://erudika.com
+ * Copyright 2013-2021 Erudika. https://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,6 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
-import com.erudika.para.AppCreatedListener;
-import com.erudika.para.AppDeletedListener;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -58,25 +56,24 @@ public class CassandraDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraDAO.class);
 
+	static {
+		// set up automatic table creation and deletion
+		App.addAppCreatedListener((App app) -> {
+			if (app != null && !app.isSharingTable()) {
+				CassandraUtils.createTable(app.getAppIdentifier());
+			}
+		});
+		App.addAppDeletedListener((App app) -> {
+			if (app != null && !app.isSharingTable()) {
+				CassandraUtils.deleteTable(app.getAppIdentifier());
+			}
+		});
+	}
+
 	/**
 	 * Default constructor.
 	 */
 	public CassandraDAO() {
-		// set up automatic table creation and deletion
-		App.addAppCreatedListener(new AppCreatedListener() {
-			public void onAppCreated(App app) {
-				if (app != null && !app.isSharingTable()) {
-					CassandraUtils.createTable(app.getAppIdentifier());
-				}
-			}
-		});
-		App.addAppDeletedListener(new AppDeletedListener() {
-			public void onAppDeleted(App app) {
-				if (app != null && !app.isSharingTable()) {
-					CassandraUtils.deleteTable(app.getAppIdentifier());
-				}
-			}
-		});
 	}
 
 	/////////////////////////////////////////////
