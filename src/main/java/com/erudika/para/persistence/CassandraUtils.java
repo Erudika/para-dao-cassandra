@@ -56,11 +56,11 @@ public final class CassandraUtils {
 	private static final String DBPASS = Config.getConfigParam("cassandra.password", "");
 	private static final int REPLICATION = Config.getConfigInt("cassandra.replication_factor", 1);
 	private static final boolean SSL = Config.getConfigBoolean("cassandra.ssl_enabled", false);
-	private static final String protocols = Config.getConfigParam("cassandra.ssl_protocols", "TLSv1.3");
-	private static final String keystorePath = Config.getConfigParam("cassandra.ssl_keystore", "");
-	private static final String keystorePass = Config.getConfigParam("cassandra.ssl_keystore_password", "");
-	private static final String truststorePath = Config.getConfigParam("cassandra.ssl_truststore", "");
-	private static final String truststorePass = Config.getConfigParam("cassandra.ssl_truststore_password", "");
+	private static final String PROTOCOLS = Config.getConfigParam("cassandra.ssl_protocols", "TLSv1.3");
+	private static final String KEYSTORE_PATH = Config.getConfigParam("cassandra.ssl_keystore", "");
+	private static final String KEYSTORE_PASS = Config.getConfigParam("cassandra.ssl_keystore_password", "");
+	private static final String TRUSTSTORE_PATH = Config.getConfigParam("cassandra.ssl_truststore", "");
+	private static final String TRUSTSTORE_PASS = Config.getConfigParam("cassandra.ssl_truststore_password", "");
 
 	private static final Map<String, PreparedStatement> STATEMENTS = new ConcurrentHashMap<String, PreparedStatement>();
 
@@ -77,16 +77,16 @@ public final class CassandraUtils {
 		try {
 			SSLFactory sslFactory = null;
 			if (SSL) {
-				if (!StringUtils.isBlank(truststorePath)) {
+				if (!StringUtils.isBlank(TRUSTSTORE_PATH)) {
 					sslFactory = SSLFactory.builder()
-							.withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
-							.withProtocols(protocols).build();
+							.withTrustMaterial(Paths.get(TRUSTSTORE_PATH), TRUSTSTORE_PASS.toCharArray())
+							.withProtocols(PROTOCOLS).build();
 				}
-				if (!StringUtils.isBlank(keystorePath)) {
+				if (!StringUtils.isBlank(KEYSTORE_PATH)) {
 					sslFactory = SSLFactory.builder()
-							.withIdentityMaterial(Paths.get(keystorePath), keystorePass.toCharArray())
-							.withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
-							.withProtocols(protocols).build();
+							.withIdentityMaterial(Paths.get(KEYSTORE_PATH), KEYSTORE_PASS.toCharArray())
+							.withTrustMaterial(Paths.get(TRUSTSTORE_PATH), TRUSTSTORE_PASS.toCharArray())
+							.withProtocols(PROTOCOLS).build();
 				}
 				if (sslFactory == null) {
 					sslFactory = SSLFactory.builder().withDefaultTrustMaterial().build();
