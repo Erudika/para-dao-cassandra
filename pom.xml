@@ -61,22 +61,22 @@
 		<dependency>
 			<groupId>com.erudika</groupId>
 			<artifactId>para-core</artifactId>
-			<version>1.38.0</version>
+			<version>1.42.0</version>
 			<scope>provided</scope>
 		</dependency>
 
 		<!-- CASSANDRA DRIVER -->
 		<dependency>
-			<groupId>com.datastax.cassandra</groupId>
-			<artifactId>cassandra-driver-core</artifactId>
-			<version>3.10.2</version>
+			<groupId>com.datastax.oss</groupId>
+			<artifactId>java-driver-core</artifactId>
+			<version>4.13.0</version>
 		</dependency>
 
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.cassandraunit</groupId>
 			<artifactId>cassandra-unit</artifactId>
-			<version>3.11.2.0</version>
+			<version>4.3.1.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

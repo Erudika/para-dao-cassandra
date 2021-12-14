@@ -17,12 +17,11 @@
  */
 package com.erudika.para.persistence;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Cluster.Builder;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.session.Session;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
@@ -30,11 +29,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.erudika.para.utils.Config;
+import java.net.InetSocketAddress;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 
 import javax.inject.Singleton;
+import nl.altindag.ssl.SSLFactory;
 
 /**
  * Apache Cassandra DAO utilities for Para.
@@ -44,8 +48,7 @@ import javax.inject.Singleton;
 public final class CassandraUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraUtils.class);
-	private static Session session;
-	private static Cluster cluster;
+	private static CqlSession session;
 	private static final String DBHOSTS = Config.getConfigParam("cassandra.hosts", "localhost");
 	private static final int DBPORT = Config.getConfigInt("cassandra.port", 9042);
 	private static final String DBNAME = Config.getConfigParam("cassandra.keyspace", Config.PARA);
@@ -53,8 +56,12 @@ public final class CassandraUtils {
 	private static final String DBPASS = Config.getConfigParam("cassandra.password", "");
 	private static final int REPLICATION = Config.getConfigInt("cassandra.replication_factor", 1);
 	private static final boolean SSL = Config.getConfigBoolean("cassandra.ssl_enabled", false);
-	private static final boolean JMX = Config.getConfigBoolean("cassandra.jmx_enabled", false);
-	private static final boolean METRICS = Config.getConfigBoolean("cassandra.metrics_enabled", true);
+	private static final String protocols = Config.getConfigParam("cassandra.ssl_protocols", "TLSv1.3");
+	private static final String keystorePath = Config.getConfigParam("cassandra.ssl_keystore", "");
+	private static final String keystorePass = Config.getConfigParam("cassandra.ssl_keystore_password", "");
+	private static final String truststorePath = Config.getConfigParam("cassandra.ssl_truststore", "");
+	private static final String truststorePass = Config.getConfigParam("cassandra.ssl_truststore_password", "");
+
 	private static final Map<String, PreparedStatement> STATEMENTS = new ConcurrentHashMap<String, PreparedStatement>();
 
 	private CassandraUtils() { }
@@ -63,24 +70,32 @@ public final class CassandraUtils {
 	 * Returns a Cassandra session object.
 	 * @return a connection session to Cassandra
 	 */
-	public static Session getClient() {
+	public static CqlSession getClient() {
 		if (session != null) {
 			return session;
 		}
 		try {
-			Builder builder = Cluster.builder().addContactPoints(DBHOSTS.split(",")).
-					withPort(DBPORT).withCredentials(DBUSER, DBPASS);
+			SSLFactory sslFactory = null;
 			if (SSL) {
-				builder.withSSL();
+				if (!StringUtils.isBlank(truststorePath)) {
+					sslFactory = SSLFactory.builder()
+							.withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
+							.withProtocols(protocols).build();
+				}
+				if (!StringUtils.isBlank(keystorePath)) {
+					sslFactory = SSLFactory.builder()
+							.withIdentityMaterial(Paths.get(keystorePath), keystorePass.toCharArray())
+							.withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
+							.withProtocols(protocols).build();
+				}
+				if (sslFactory == null) {
+					sslFactory = SSLFactory.builder().withDefaultTrustMaterial().build();
+				}
 			}
-			if (!JMX) {
-				builder.withoutJMXReporting();
-			}
-			if (!METRICS) {
-				builder.withoutMetrics();
-			}
-			cluster = builder.build();
-			session = cluster.connect();
+			session = CqlSession.builder().addContactPoints(Arrays.asList(DBHOSTS.split(",")).stream().
+					map(e -> InetSocketAddress.createUnresolved(e, DBPORT)).collect(Collectors.toList())).
+					withSslContext(sslFactory == null ?  null : sslFactory.getSslContext()).
+					withAuthCredentials(DBUSER, DBPASS).build();
 			if (!existsTable(Config.getRootAppIdentifier())) {
 				createTable(session, Config.getRootAppIdentifier());
 			} else {
@@ -109,9 +124,6 @@ public final class CassandraUtils {
 			session.close();
 			session = null;
 		}
-		if (cluster != null) {
-			cluster.close();
-		}
 	}
 
 	/**
@@ -123,12 +135,12 @@ public final class CassandraUtils {
 		if (StringUtils.isBlank(appid)) {
 			return false;
 		}
-		if (cluster == null) {
+		if (session == null) {
 			throw new IllegalStateException("Cassandra client not initialized.");
 		}
 		try {
-			KeyspaceMetadata ks = cluster.getMetadata().getKeyspace(DBNAME);
-			TableMetadata table = ks.getTable(getTableNameForAppid(appid));
+			KeyspaceMetadata ks = session.getMetadata().getKeyspace(DBNAME).get();
+			TableMetadata table = ks.getTable(getTableNameForAppid(appid)).get();
 			return table != null && table.getName() != null;
 		} catch (Exception e) {
 			return false;
@@ -151,16 +163,16 @@ public final class CassandraUtils {
 		}
 		String table = getTableNameForAppid(appid);
 		try {
-			if (cluster.getMetadata().getKeyspace(DBNAME) == null) {
-				client.execute("CREATE KEYSPACE IF NOT EXISTS " + DBNAME +
+			if (session.getMetadata().getKeyspace(DBNAME).isEmpty()) {
+				session.execute("CREATE KEYSPACE IF NOT EXISTS " + DBNAME +
 						" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': " + REPLICATION + "};");
 			}
 		} catch (Exception e) {
 			logger.warn("Could not create keyspace {}!", DBNAME);
 		}
 		try {
-			client.execute("USE " + DBNAME + ";");
-			client.execute("CREATE TABLE IF NOT EXISTS " + table + " (id text PRIMARY KEY, json text, json_updates text);");
+			session.execute("USE " + DBNAME + ";");
+			session.execute("CREATE TABLE IF NOT EXISTS " + table + " (id text PRIMARY KEY, json text, json_updates text);");
 			logger.info("Created Cassandra table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);

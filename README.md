@@ -3,7 +3,6 @@
 
 > ### Apache Cassandra DAO plugin for Para
 
-[![Build Status](https://travis-ci.org/Erudika/para-dao-cassandra.svg?branch=master)](https://travis-ci.org/Erudika/para-dao-cassandra)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-dao-cassandra/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-dao-cassandra)
 [![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -44,9 +43,14 @@ para.cassandra.keyspace = "myapp"
 para.cassandra.user = "user"
 para.cassandra.password = "pass"
 para.cassandra.replication_factor = 1
+
+# SSL configuration
 para.cassandra.ssl_enabled = false
-para.cassandra.jmx_enabled = false
-para.cassandra.metrics_enabled = true
+para.cassandra.ssl_protocols = ""
+para.cassandra.ssl_keystore = ""
+para.cassandra.ssl_keystore_password = ""
+para.cassandra.ssl_truststore = ""
+para.cassandra.ssl_truststore_password = ""
 ```
 
 Finally, set the config property:

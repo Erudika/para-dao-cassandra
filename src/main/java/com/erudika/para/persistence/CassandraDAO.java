@@ -17,13 +17,13 @@
  */
 package com.erudika.para.persistence;
 
-import com.datastax.driver.core.PagingState;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.PagingState;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -46,6 +46,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Apache Cassandra DAO implementation for Para.
@@ -248,22 +249,23 @@ public class CassandraDAO implements DAO {
 		PreparedStatement ps = getPreparedStatement("SELECT id, json, json_updates FROM " +
 				CassandraUtils.getTableNameForAppid(appid) + " WHERE id = ?;");
 
-		List<ResultSetFuture> futures = new ArrayList<ResultSetFuture>(keys.size());
+		List<CompletionStage<AsyncResultSet>> futures = new ArrayList<CompletionStage<AsyncResultSet>>(keys.size());
 		for (String key : keys) {
-			ResultSetFuture resultSetFuture = getClient().executeAsync(ps.bind(key));
+			CompletionStage<AsyncResultSet> resultSetFuture = getClient().executeAsync(ps.bind(key));
 			futures.add(resultSetFuture);
 		}
-		for (ResultSetFuture future : futures) {
-			ResultSet rows = future.getUninterruptibly();
-			Row row = rows.one();
-			if (row != null) {
-				String json = row.getString("json");
-				String jsonUpdates = row.getString("json_updates");
-				if (!StringUtils.isBlank(json)) {
-					P obj = fromRow(json, jsonUpdates);
-					results.put(row.getString("id"), obj);
+		for (CompletionStage<AsyncResultSet> future : futures) {
+			future.thenAccept(rows -> {
+				Row row = rows.one();
+				if (row != null) {
+					String json = row.getString("json");
+					String jsonUpdates = row.getString("json_updates");
+					if (!StringUtils.isBlank(json)) {
+						P obj = fromRow(json, jsonUpdates);
+						results.put(row.getString("id"), obj);
+					}
 				}
-			}
+			});
 		}
 		logger.debug("DAO.readAll() {}", results.size());
 		return results;
@@ -279,9 +281,9 @@ public class CassandraDAO implements DAO {
 			pager = new Pager();
 		}
 		try {
-			Statement st = new SimpleStatement("SELECT json, json_updates FROM " +
+			Statement<?> st = SimpleStatement.newInstance("SELECT json, json_updates FROM " +
 					CassandraUtils.getTableNameForAppid(appid) + ";");
-			st.setFetchSize(pager.getLimit());
+			st.setPageSize(pager.getLimit());
 			String lastPage = pager.getLastKey();
 			if (lastPage != null) {
 				if ("end".equals(lastPage)) {
@@ -291,7 +293,7 @@ public class CassandraDAO implements DAO {
 				}
 			}
 			ResultSet rs = getClient().execute(st);
-			PagingState nextPage = rs.getExecutionInfo().getPagingState();
+			PagingState nextPage = rs.getExecutionInfo().getSafePagingState();
 
 			int remaining = rs.getAvailableWithoutFetching();
 			for (Row row : rs) {
