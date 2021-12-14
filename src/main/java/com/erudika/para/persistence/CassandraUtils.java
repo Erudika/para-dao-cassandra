@@ -64,6 +64,13 @@ public final class CassandraUtils {
 
 	private static final Map<String, PreparedStatement> STATEMENTS = new ConcurrentHashMap<String, PreparedStatement>();
 
+	static {
+		// Fix for exceptions from Spring Boot when using a different MongoDB host than localhost.
+		System.setProperty("spring.autoconfigure.exclude",
+				"org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration,"
+						+ "org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration");
+	}
+
 	private CassandraUtils() { }
 
 	/**
