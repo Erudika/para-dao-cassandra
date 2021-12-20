@@ -15,20 +15,20 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.persistence;
+package com.erudika.para.server.persistence;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.session.Session;
-import com.erudika.para.DestroyListener;
-import com.erudika.para.Para;
+import com.erudika.para.core.listeners.DestroyListener;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.erudika.para.utils.Config;
+import com.erudika.para.core.utils.Config;
 import java.net.InetSocketAddress;
 import java.nio.file.Paths;
 import java.util.Arrays;

@@ -15,7 +15,7 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.persistence;
+package com.erudika.para.server.persistence;
 
 /**
  *
@@ -33,6 +33,8 @@ package com.erudika.para.persistence;
 //	@BeforeClass
 //	public static void setUpClass() throws InterruptedException, TTransportException, IOException {
 //		System.setProperty("para.cassandra.port", "9142");
+//		System.setProperty("para.cassandra.user", "user");
+//		System.setProperty("para.cassandra.password", "pass");
 //		System.setProperty("para.app_name", ROOT_APP_NAME);
 //		System.setProperty("para.cluster_name", ROOT_APP_NAME);
 //		try {
@@ -40,7 +42,7 @@ package com.erudika.para.persistence;
 //		} catch (Exception e) {
 //			logger.error(null, e);
 //		}
-//		EmbeddedCassandraServerHelper.getCluster();
+////		EmbeddedCassandraServerHelper.getCluster();
 //		EmbeddedCassandraServerHelper.getSession();
 //		CassandraUtils.createTable(ROOT_APP_NAME);
 //		CassandraUtils.createTable(appid1);
