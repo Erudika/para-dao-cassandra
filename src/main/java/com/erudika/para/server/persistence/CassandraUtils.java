@@ -35,16 +35,12 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-
-import javax.inject.Singleton;
 import nl.altindag.ssl.SSLFactory;
 
 /**
  * Apache Cassandra DAO utilities for Para.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public final class CassandraUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraUtils.class);

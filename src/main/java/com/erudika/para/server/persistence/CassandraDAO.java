@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,6 @@ import java.util.concurrent.CompletionStage;
  * Apache Cassandra DAO implementation for Para.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public class CassandraDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraDAO.class);
