@@ -45,18 +45,18 @@ public final class CassandraUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraUtils.class);
 	private static CqlSession session;
-	private static final String DBHOSTS = Config.getConfigParam("cassandra.hosts", "localhost");
-	private static final int DBPORT = Config.getConfigInt("cassandra.port", 9042);
-	private static final String DBNAME = Config.getConfigParam("cassandra.keyspace", Config.PARA);
-	private static final String DBUSER = Config.getConfigParam("cassandra.user", "");
-	private static final String DBPASS = Config.getConfigParam("cassandra.password", "");
-	private static final int REPLICATION = Config.getConfigInt("cassandra.replication_factor", 1);
-	private static final boolean SSL = Config.getConfigBoolean("cassandra.ssl_enabled", false);
-	private static final String PROTOCOLS = Config.getConfigParam("cassandra.ssl_protocols", "TLSv1.3");
-	private static final String KEYSTORE_PATH = Config.getConfigParam("cassandra.ssl_keystore", "");
-	private static final String KEYSTORE_PASS = Config.getConfigParam("cassandra.ssl_keystore_password", "");
-	private static final String TRUSTSTORE_PATH = Config.getConfigParam("cassandra.ssl_truststore", "");
-	private static final String TRUSTSTORE_PASS = Config.getConfigParam("cassandra.ssl_truststore_password", "");
+	private static final String DBHOSTS = Para.getConfig().getConfigParam("cassandra.hosts", "localhost");
+	private static final int DBPORT = Para.getConfig().getConfigInt("cassandra.port", 9042);
+	private static final String DBNAME = Para.getConfig().getConfigParam("cassandra.keyspace", Config.PARA);
+	private static final String DBUSER = Para.getConfig().getConfigParam("cassandra.user", "");
+	private static final String DBPASS = Para.getConfig().getConfigParam("cassandra.password", "");
+	private static final int REPLICATION = Para.getConfig().getConfigInt("cassandra.replication_factor", 1);
+	private static final boolean SSL = Para.getConfig().getConfigBoolean("cassandra.ssl_enabled", false);
+	private static final String PROTOCOLS = Para.getConfig().getConfigParam("cassandra.ssl_protocols", "TLSv1.3");
+	private static final String KEYSTORE_PATH = Para.getConfig().getConfigParam("cassandra.ssl_keystore", "");
+	private static final String KEYSTORE_PASS = Para.getConfig().getConfigParam("cassandra.ssl_keystore_password", "");
+	private static final String TRUSTSTORE_PATH = Para.getConfig().getConfigParam("cassandra.ssl_truststore", "");
+	private static final String TRUSTSTORE_PASS = Para.getConfig().getConfigParam("cassandra.ssl_truststore_password", "");
 
 	private static final Map<String, PreparedStatement> STATEMENTS = new ConcurrentHashMap<String, PreparedStatement>();
 
@@ -99,8 +99,8 @@ public final class CassandraUtils {
 					map(e -> InetSocketAddress.createUnresolved(e, DBPORT)).collect(Collectors.toList())).
 					withSslContext(sslFactory == null ?  null : sslFactory.getSslContext()).
 					withAuthCredentials(DBUSER, DBPASS).build();
-			if (!existsTable(Config.getRootAppIdentifier())) {
-				createTable(session, Config.getRootAppIdentifier());
+			if (!existsTable(Para.getConfig().getRootAppIdentifier())) {
+				createTable(session, Para.getConfig().getRootAppIdentifier());
 			} else {
 				session.execute("USE " + DBNAME + ";");
 			}
