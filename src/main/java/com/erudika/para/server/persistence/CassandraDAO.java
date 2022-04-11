@@ -24,30 +24,30 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
-import java.lang.annotation.Annotation;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.utils.ParaObjectUtils;
+import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.persistence.DAO;
-import static com.erudika.para.server.persistence.CassandraUtils.getClient;
-import static com.erudika.para.server.persistence.CassandraUtils.getPreparedStatement;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
+import static com.erudika.para.server.persistence.CassandraUtils.getClient;
+import static com.erudika.para.server.persistence.CassandraUtils.getPreparedStatement;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Apache Cassandra DAO implementation for Para.
@@ -440,7 +440,7 @@ public class CassandraDAO implements DAO {
 	}
 
 	private static void throwIfNecessary(Throwable t) {
-		if (t != null && Para.getConfig().getConfigBoolean("fail_on_write_errors", true)) {
+		if (t != null && Para.getConfig().exceptionOnWriteErrorsEnabled()) {
 			throw new RuntimeException("DAO write operation failed!", t);
 		}
 	}
