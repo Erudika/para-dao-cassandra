@@ -20,7 +20,7 @@ module com.erudika.para.server.persistence.cassandra {
 	requires com.erudika.para.core;
 	requires org.apache.commons.lang3;
 	requires com.fasterxml.jackson.databind;
-	requires io.github.hakky54.sslcontext.kickstart;
+	requires nl.altindag.ssl;
 	requires org.slf4j;
 	requires com.datastax.oss.driver.core;
 	exports com.erudika.para.server.persistence;
