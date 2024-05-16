@@ -76,23 +76,17 @@
 			<artifactId>cassandra-unit</artifactId>
 			<version>4.3.1.0</version>
 			<scope>test</scope>
-		 <exclusions>
-		  <exclusion>
-		   <groupId>org.apache.httpcomponents</groupId>
-		   <artifactId>httpcore</artifactId>
-		  </exclusion>
-		 </exclusions>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.httpcomponents</groupId>
+					<artifactId>httpcore</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
 			<version>2.23.4</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.13.1</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -102,7 +96,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.5.2</version>
+				<version>3.5.3</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -112,6 +106,7 @@
 						<configuration>
 							<minimizeJar>false</minimizeJar>
 							<shadedArtifactAttached>true</shadedArtifactAttached>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
 							</transformers>
@@ -166,7 +161,7 @@
 					<dependency>
 						<groupId>com.puppycrawl.tools</groupId>
 						<artifactId>checkstyle</artifactId>
-						<version>9.2</version>
+						<version>10.16.0</version>
 					</dependency>
 				</dependencies>
 				<executions>
@@ -218,7 +213,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-deploy-plugin</artifactId>
-				<version>3.1.1</version>
+				<version>3.1.2</version>
 			</plugin>
 
 			<plugin>
@@ -230,7 +225,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.3.0</version>
+				<version>3.4.1</version>
 				<configuration>
 					<archive>
 						<manifestEntries>
@@ -291,7 +286,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
-						<version>3.2.2</version>
+						<version>3.2.4</version>
 						<executions>
 							<execution>
 								<id>sign-artifacts</id>
@@ -306,33 +301,5 @@
 			</build>
 		</profile>
 	</profiles>
-
-	<distributionManagement>
-		<snapshotRepository>
-			<id>oss.sonatype.org</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-		<repository>
-			<id>oss.sonatype.org</id>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-		</repository>
-	</distributionManagement>
-
-	<repositories>
-		<repository>
-			<id>sonatype-snapshots</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>oss.sonatype.org</id>
-			<url>https://oss.sonatype.org/content/repositories/releases/</url>
-		</repository>
-	</repositories>
 
 </project>
