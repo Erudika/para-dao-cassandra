@@ -98,7 +98,7 @@ public final class CassandraUtils {
 			session = CqlSession.builder().addContactPoints(Arrays.asList(DBHOSTS.split(",")).stream().
 					map(e -> InetSocketAddress.createUnresolved(e, DBPORT)).collect(Collectors.toList())).
 					withSslContext(sslFactory == null ?  null : sslFactory.getSslContext()).
-					withAuthCredentials(DBUSER, DBPASS).build();
+					withAuthCredentials(DBUSER, DBPASS).withLocalDatacenter("datacenter1").build();
 			if (!existsTable(Para.getConfig().getRootAppIdentifier())) {
 				createTable(session, Para.getConfig().getRootAppIdentifier());
 			} else {
