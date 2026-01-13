@@ -249,11 +249,9 @@ public class CassandraDAO implements DAO {
 		PreparedStatement ps = getPreparedStatement("SELECT id, json, json_updates FROM " +
 				CassandraUtils.getTableNameForAppid(appid) + " WHERE id = ?;");
 
-		logger.error("==============ENTERING READALL ==============");
 		keys.stream().map(key -> getClient().executeAsync(ps.bind(key)).thenAccept(rows -> {
 			Row row = rows.one();
 			if (row != null) {
-				logger.error(">>>>>>>>>> FOUND " + row.getFormattedContents());
 				String json = row.getString("json");
 				String jsonUpdates = row.getString("json_updates");
 				if (!StringUtils.isBlank(json)) {
@@ -262,7 +260,6 @@ public class CassandraDAO implements DAO {
 				}
 			}
 		}).toCompletableFuture()).forEach(CompletableFuture::join);
-		logger.error("==============EXITING READALL ==============");
 		logger.debug("DAO.readAll() {}", results.size());
 		return results;
 	}

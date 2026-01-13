@@ -23,6 +23,5 @@ module com.erudika.para.server.persistence.cassandra {
 	requires nl.altindag.ssl;
 	requires org.slf4j;
 	requires com.datastax.oss.driver.core;
-	exports com.erudika.para.server.persistence;
 	provides com.erudika.para.core.persistence.DAO with com.erudika.para.server.persistence.CassandraDAO;
 }
