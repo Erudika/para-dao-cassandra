@@ -1,0 +1,6 @@
+b689197 [maven-release-plugin] prepare for next development iteration
+52ee9ea [maven-release-plugin] prepare release 1.43.0
+4a490a7 Release v1.43.0.
+8efd799 updated dependencies
+0fd9fa0 [maven-release-plugin] prepare for next development iteration
+### :package: [Download JAR](https://repo1.maven.org/maven2/com/erudika/para-dao-cassandra/1.43.0/para-dao-cassandra-1.43.0-shaded.jar)
