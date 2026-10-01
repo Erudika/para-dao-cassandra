@@ -58,17 +58,19 @@ public class CassandraDAO implements DAO {
 	private static final Logger logger = LoggerFactory.getLogger(CassandraDAO.class);
 
 	static {
-		// set up automatic table creation and deletion
-		App.addAppCreatedListener((App app) -> {
-			if (app != null && !app.isSharingTable()) {
-				CassandraUtils.createTable(app.getAppIdentifier());
-			}
-		});
-		App.addAppDeletedListener((App app) -> {
-			if (app != null && !app.isSharingTable()) {
-				CassandraUtils.deleteTable(app.getAppIdentifier());
-			}
-		});
+		if (CassandraDAO.class.getSimpleName().equals(Para.getConfig().daoPlugin())) {
+			// set up automatic table creation and deletion
+			App.addAppCreatedListener((App app) -> {
+				if (app != null && !app.isSharingTable()) {
+					CassandraUtils.createTable(app.getAppIdentifier());
+				}
+			});
+			App.addAppDeletedListener((App app) -> {
+				if (app != null && !app.isSharingTable()) {
+					CassandraUtils.deleteTable(app.getAppIdentifier());
+				}
+			});
+		}
 	}
 
 	/**
